@@ -812,9 +812,9 @@ class TodoListCard extends LitElement {
     const showSubtasks = this._config.show_subtasks !== false;
     return html`
       <div class="task-container">
-        <div class="task-item ${isCompleted ? 'completed' : 'active'} ${dueDateStatus || ''}" @click="${() => showSubtasks ? this._toggleExpand(task.uid) : this._toggleEditMode(task.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
-          <div class="icon" style="background-color: ${this._config.icon_background};"><ha-icon icon="${icon}"></ha-icon></div>
-          <div class="task-text">
+        <div class="task-item ${isCompleted ? 'completed' : 'active'} ${dueDateStatus || ''} ${!showSubtasks ? 'no-expand' : ''}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};" @click="${showSubtasks ? () => this._toggleExpand(task.uid) : null}">
+          ${showSubtasks ? html`<div class="icon" style="background-color: ${this._config.icon_background};"><ha-icon icon="${icon}"></ha-icon></div>` : ''}
+          <div class="task-text" style="${!showSubtasks ? 'padding-left: 12px;' : ''}">
             <div class="summary">
               <span>${task.summary}</span>
               ${this._config.show_priority && !isCompleted ? this._renderPriorityLabel(priority) : ''}
@@ -836,7 +836,7 @@ class TodoListCard extends LitElement {
           </div>
           <div class="checkbox" @click="${(e) => this._handleStatusUpdate(e, task)}"><ha-icon icon="${isCompleted ? 'mdi:checkbox-marked' : 'mdi:checkbox-blank-outline'}"></ha-icon></div>
         </div>
-        ${this._config.show_subtasks !== false && this._expandedTaskId === task.uid ? this._renderSubtasks(task) : ''}
+        ${showSubtasks && this._expandedTaskId === task.uid ? this._renderSubtasks(task) : ''}
         ${this._editedTaskId === task.uid ? this._renderEditForm(task) : ''}
       </div>
     `;
@@ -847,15 +847,15 @@ class TodoListCard extends LitElement {
     const subtasks = metadata.subtasks || []; const completedSubtasks = subtasks.filter(s => s.status === 'completed').length; const totalSubtasks = subtasks.length;
     // Icon logic for shopping
     const icon = metadata.icon || DEFAULT_ICON;
-    // Show icon only if it's NOT the default blank outline
-    const showIcon = icon !== DEFAULT_ICON;
+    // Show icon only if it's NOT the default blank outline AND showSubtasks is enabled
     const showSubtasks = this._config.show_subtasks !== false;
+    const showIcon = showSubtasks && icon !== DEFAULT_ICON;
 
     return html`
       <div class="task-container">
-        <div class="task-item shopping-item ${isCompleted ? 'completed' : 'active'}" @click="${() => showSubtasks ? this._toggleExpand(item.uid) : this._toggleEditMode(item.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
+        <div class="task-item shopping-item ${isCompleted ? 'completed' : 'active'} ${!showSubtasks ? 'no-expand' : ''}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};" @click="${showSubtasks ? () => this._toggleExpand(item.uid) : null}">
           ${showIcon ? html`<div class="icon" style="background-color: ${this._config.icon_background};"><ha-icon icon="${icon}"></ha-icon></div>` : ''}
-          <div class="task-text" style="${showIcon ? 'padding-left: 0;' : ''}">
+          <div class="task-text" style="${!showSubtasks ? 'padding-left: 12px;' : (showIcon ? 'padding-left: 0;' : '')}">
             <div class="summary">
                 <span>${item.summary}</span>
                 ${quantity ? html`<span class="quantity">(x${quantity})</span>` : ''}
@@ -872,7 +872,7 @@ class TodoListCard extends LitElement {
           ${link ? html`<ha-icon class="link-button" icon="mdi:open-in-new" @click="${(e) => this._handleOpenLink(e, link)}"></ha-icon>` : ''}
           <div class="checkbox" @click="${(e) => this._handleStatusUpdate(e, item)}"><ha-icon icon="${isCompleted ? 'mdi:checkbox-marked' : 'mdi:checkbox-blank-outline'}"></ha-icon></div>
         </div>
-        ${this._config.show_subtasks !== false && this._expandedTaskId === item.uid ? this._renderSubtasks(item) : ''}
+        ${showSubtasks && this._expandedTaskId === item.uid ? this._renderSubtasks(item) : ''}
         ${this._editedTaskId === item.uid ? this._renderEditForm(item) : ''}
       </div>
     `;
@@ -907,6 +907,7 @@ class TodoListCard extends LitElement {
       .error-message { padding: 12px; margin: 0 12px 12px; background-color: var(--error-color); color: var(--text-primary-color); border-radius: var(--ha-card-border-radius, 12px); text-align: center; cursor: pointer; }
       .card-content { flex-grow: 1; overflow-y: auto; }
       .task-item { display: flex; align-items: center; padding: 4px; min-height: 58px; border-radius: var(--ha-card-border-radius, 12px); cursor: pointer; margin-top: 8px; position: relative; z-index: 1; }
+      .task-item.no-expand { cursor: default; }
       .summary { font-weight: 500; font-size: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px; }
       .priority-label { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 8px; margin-left: 4px; color: var(--text-primary-color); opacity: 0.9; flex-shrink: 0; }
       .task-item.overdue .due-date-wrapper { color: var(--error-color)!important; }
@@ -1047,15 +1048,13 @@ class TodoListCardEditor extends LitElement {
     }
     return html`
       <div class="card-config">
-        <ha-entity-picker
-            label="Entity (Required)"
+        <ha-selector
             .hass=${this.hass}
+            .selector=${{ entity: { domain: 'todo' } }}
             .value=${this._config.entity || ''}
-            .configValue=${'entity'}
-            include-domains="todo"
+            .label=${'Entity (Required)'}
             @value-changed=${this._entityChanged}
-            allow-custom-entity
-        ></ha-entity-picker>
+        ></ha-selector>
         <ha-textfield label="Title" .value=${this._config.title || ''} @input=${this._titleChanged}></ha-textfield>
         <div class="row">
             <ha-select label="Sort By" .value=${this._config.sort_by || 'priority'} @closed=${this._sortbyChanged} fixedMenuPosition naturalMenuWidth>
@@ -1137,7 +1136,7 @@ class TodoListCardEditor extends LitElement {
         align-items: center;
         padding: 8px 0;
       }
-      ha-entity-picker {
+      ha-entity-picker, ha-selector {
         display: block;
         width: 100%;
       }
