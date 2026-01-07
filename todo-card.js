@@ -96,6 +96,7 @@ class TodoListCard extends LitElement {
       show_date_filter: true,
       show_search_button: true,
       show_clear_button: true,
+      show_subtasks: true,
       default_date_filter: DATE_FILTER_OPTIONS.ALL,
     };
   }
@@ -254,6 +255,7 @@ class TodoListCard extends LitElement {
       show_date_filter: true,
       show_search_button: true,
       show_clear_button: true,
+      show_subtasks: true,
       default_date_filter: DATE_FILTER_OPTIONS.ALL,
       ...config
     };
@@ -586,8 +588,12 @@ class TodoListCard extends LitElement {
     const activeItems = allTasks.filter(t => t.status === 'needs_action').sort(sortFn);
     const completedItems = allTasks.filter(t => t.status === 'completed').sort(sortFn);
 
+    // Calculate total counts from unfiltered tasks for accurate display
+    const totalActiveTasks = (this._tasks || []).filter(t => t.status === 'needs_action').length;
+    const totalCompletedTasks = (this._tasks || []).filter(t => t.status === 'completed').length;
+
     const isFrameless = this._config.card_background === 'none'; const headerPadding = isFrameless ? '6px 4px 12px 16px' : '6px 20px 12px 20px'; const contentPadding = isFrameless ? '0 4px 4px' : '0 12px 12px';
-    let countText = this._config.mode === 'tasks' ? `${activeItems.length} tasks · ${completedItems.length} completed` : `${activeItems.length} items · ${completedItems.length} checked`;
+    let countText = this._config.mode === 'tasks' ? `${totalActiveTasks} tasks · ${totalCompletedTasks} completed` : `${totalActiveTasks} items · ${totalCompletedTasks} checked`;
     if (this._searchQuery) { countText = `${activeItems.length + completedItems.length} results found`; }
 
     // Add date filter info to count text
@@ -803,15 +809,16 @@ class TodoListCard extends LitElement {
   _renderTask(task) {
     const isCompleted = task.status === 'completed'; const textColor = isCompleted ? this._config.completed_text_color : this._config.text_color; const metadata = task._cachedMetadata ?? {}; const description = metadata.description || null; const priority = metadata.priority || DEFAULT_PRIORITY; const icon = metadata.icon || 'mdi:hammer'; const dueDate = task.due || null; const dueDateStatus = this._getDueDateStatus(dueDate);
     const subtasks = metadata.subtasks || []; const completedSubtasks = subtasks.filter(s => s.status === 'completed').length; const totalSubtasks = subtasks.length; const hasDescription = !!description; const hasDueDate = !isCompleted && !!dueDate;
+    const showSubtasks = this._config.show_subtasks !== false;
     return html`
       <div class="task-container">
-        <div class="task-item ${isCompleted ? 'completed' : 'active'} ${dueDateStatus || ''}" @click="${() => this._toggleExpand(task.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
+        <div class="task-item ${isCompleted ? 'completed' : 'active'} ${dueDateStatus || ''}" @click="${() => showSubtasks ? this._toggleExpand(task.uid) : this._toggleEditMode(task.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
           <div class="icon" style="background-color: ${this._config.icon_background};"><ha-icon icon="${icon}"></ha-icon></div>
           <div class="task-text">
             <div class="summary">
               <span>${task.summary}</span>
               ${this._config.show_priority && !isCompleted ? this._renderPriorityLabel(priority) : ''}
-              ${totalSubtasks > 0 && !isCompleted ? html`
+              ${showSubtasks && totalSubtasks > 0 && !isCompleted ? html`
                 <div class="subtask-progress" title="${completedSubtasks} of ${totalSubtasks} completed">
                   <ha-icon icon="mdi:format-list-checks"></ha-icon>
                   <span>${completedSubtasks}/${totalSubtasks}</span>
@@ -829,7 +836,7 @@ class TodoListCard extends LitElement {
           </div>
           <div class="checkbox" @click="${(e) => this._handleStatusUpdate(e, task)}"><ha-icon icon="${isCompleted ? 'mdi:checkbox-marked' : 'mdi:checkbox-blank-outline'}"></ha-icon></div>
         </div>
-        ${this._expandedTaskId === task.uid ? this._renderSubtasks(task) : ''}
+        ${this._config.show_subtasks !== false && this._expandedTaskId === task.uid ? this._renderSubtasks(task) : ''}
         ${this._editedTaskId === task.uid ? this._renderEditForm(task) : ''}
       </div>
     `;
@@ -842,16 +849,17 @@ class TodoListCard extends LitElement {
     const icon = metadata.icon || DEFAULT_ICON;
     // Show icon only if it's NOT the default blank outline
     const showIcon = icon !== DEFAULT_ICON;
+    const showSubtasks = this._config.show_subtasks !== false;
 
     return html`
       <div class="task-container">
-        <div class="task-item shopping-item ${isCompleted ? 'completed' : 'active'}" @click="${() => this._toggleExpand(item.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
+        <div class="task-item shopping-item ${isCompleted ? 'completed' : 'active'}" @click="${() => showSubtasks ? this._toggleExpand(item.uid) : this._toggleEditMode(item.uid)}" style="background-color: ${isCompleted ? this._config.completed_color : this._config.card_color}; color: ${textColor};">
           ${showIcon ? html`<div class="icon" style="background-color: ${this._config.icon_background};"><ha-icon icon="${icon}"></ha-icon></div>` : ''}
           <div class="task-text" style="${showIcon ? 'padding-left: 0;' : ''}">
             <div class="summary">
                 <span>${item.summary}</span>
                 ${quantity ? html`<span class="quantity">(x${quantity})</span>` : ''}
-                ${totalSubtasks > 0 && !isCompleted ? html`
+                ${showSubtasks && totalSubtasks > 0 && !isCompleted ? html`
                     <div class="subtask-progress" title="${completedSubtasks} of ${totalSubtasks} completed">
                         <ha-icon icon="mdi:format-list-checks"></ha-icon>
                         <span>${completedSubtasks}/${totalSubtasks}</span>
@@ -864,7 +872,7 @@ class TodoListCard extends LitElement {
           ${link ? html`<ha-icon class="link-button" icon="mdi:open-in-new" @click="${(e) => this._handleOpenLink(e, link)}"></ha-icon>` : ''}
           <div class="checkbox" @click="${(e) => this._handleStatusUpdate(e, item)}"><ha-icon icon="${isCompleted ? 'mdi:checkbox-marked' : 'mdi:checkbox-blank-outline'}"></ha-icon></div>
         </div>
-        ${this._expandedTaskId === item.uid ? this._renderSubtasks(item) : ''}
+        ${this._config.show_subtasks !== false && this._expandedTaskId === item.uid ? this._renderSubtasks(item) : ''}
         ${this._editedTaskId === item.uid ? this._renderEditForm(item) : ''}
       </div>
     `;
@@ -1075,6 +1083,7 @@ class TodoListCardEditor extends LitElement {
         <ha-formfield label="Auto-complete parent task"><ha-switch .checked=${this._config.auto_complete_parent === true} @change=${this._autoCompleteChanged}></ha-switch></ha-formfield>
         <ha-formfield label="Show Status Filter Menu"><ha-switch .checked=${this._config.show_filter_menu !== false} @change=${this._showFilterMenuChanged}></ha-switch></ha-formfield>
         <ha-formfield label="Show Date Filter"><ha-switch .checked=${this._config.show_date_filter !== false} @change=${this._showDateFilterChanged}></ha-switch></ha-formfield>
+        <ha-formfield label="Show Subtasks"><ha-switch .checked=${this._config.show_subtasks !== false} @change=${this._showSubtasksChanged}></ha-switch></ha-formfield>
         <ha-formfield label="Show Search Button"><ha-switch .checked=${this._config.show_search_button !== false} @change=${this._showSearchButtonChanged}></ha-switch></ha-formfield>
         <ha-formfield label="Show Clear Button"><ha-switch .checked=${this._config.show_clear_button !== false} @change=${this._showClearButtonChanged}></ha-switch></ha-formfield>
       </div>
@@ -1097,6 +1106,7 @@ class TodoListCardEditor extends LitElement {
   _autoCompleteChanged(ev) { this.configChanged({ ...this._config, auto_complete_parent: ev.target.checked }); }
   _showFilterMenuChanged(ev) { this.configChanged({ ...this._config, show_filter_menu: ev.target.checked }); }
   _showDateFilterChanged(ev) { this.configChanged({ ...this._config, show_date_filter: ev.target.checked }); }
+  _showSubtasksChanged(ev) { this.configChanged({ ...this._config, show_subtasks: ev.target.checked }); }
   _showSearchButtonChanged(ev) { this.configChanged({ ...this._config, show_search_button: ev.target.checked }); }
   _showClearButtonChanged(ev) { this.configChanged({ ...this._config, show_clear_button: ev.target.checked }); }
   static get styles() {

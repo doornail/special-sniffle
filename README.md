@@ -58,6 +58,7 @@ default_date_filter: all             # 'all', 'today', 'tomorrow', 'next_7_days'
 show_priority: true                  # Show priority labels
 show_filter_menu: true               # Show status filter button
 show_date_filter: true               # Show date filter button
+show_subtasks: true                  # Show subtasks panel (disable to simplify UI)
 show_search_button: true             # Show search button
 show_clear_button: true              # Show clear completed button
 confirm_delete: true                 # Confirm before deleting items
