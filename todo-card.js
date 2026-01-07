@@ -1047,7 +1047,15 @@ class TodoListCardEditor extends LitElement {
     }
     return html`
       <div class="card-config">
-        <ha-entity-picker label="Entity" .hass=${this.hass} .value=${this._config.entity} .includeDomains=${['todo']} @value-changed=${this._entityChanged} allow-custom-entity></ha-entity-picker>
+        <ha-entity-picker
+            label="Entity (Required)"
+            .hass=${this.hass}
+            .value=${this._config.entity || ''}
+            .configValue=${'entity'}
+            include-domains="todo"
+            @value-changed=${this._entityChanged}
+            allow-custom-entity
+        ></ha-entity-picker>
         <ha-textfield label="Title" .value=${this._config.title || ''} @input=${this._titleChanged}></ha-textfield>
         <div class="row">
             <ha-select label="Sort By" .value=${this._config.sort_by || 'priority'} @closed=${this._sortbyChanged} fixedMenuPosition naturalMenuWidth>
@@ -1110,7 +1118,34 @@ class TodoListCardEditor extends LitElement {
   _showSearchButtonChanged(ev) { this.configChanged({ ...this._config, show_search_button: ev.target.checked }); }
   _showClearButtonChanged(ev) { this.configChanged({ ...this._config, show_clear_button: ev.target.checked }); }
   static get styles() {
-    return css`.card-config { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; } .row { display: flex; gap: 16px; } .row > * { flex: 1; } ha-formfield { display: flex; align-items: center; padding: 8px 0; }`;
+    return css`
+      .card-config {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px 0;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+      }
+      .row > * {
+        flex: 1;
+      }
+      ha-formfield {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+      }
+      ha-entity-picker {
+        display: block;
+        width: 100%;
+      }
+      ha-textfield, ha-select {
+        display: block;
+        width: 100%;
+      }
+    `;
   }
 }
 
