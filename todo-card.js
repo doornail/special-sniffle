@@ -19,6 +19,7 @@ const DATE_FILTER_OPTIONS = {
   ALL: 'all',
   TODAY: 'today',
   TOMORROW: 'tomorrow',
+  BEFORE_TODAY: 'before_today',
   NEXT_7_DAYS: 'next_7_days',
   NEXT_14_DAYS: 'next_14_days',
   CUSTOM: 'custom',
@@ -455,6 +456,7 @@ class TodoListCard extends LitElement {
     switch (this._dateFilter) {
       case DATE_FILTER_OPTIONS.TODAY: return 'Today';
       case DATE_FILTER_OPTIONS.TOMORROW: return 'Tomorrow';
+      case DATE_FILTER_OPTIONS.BEFORE_TODAY: return 'Through Today';
       case DATE_FILTER_OPTIONS.NEXT_7_DAYS: return 'Next 7 Days';
       case DATE_FILTER_OPTIONS.NEXT_14_DAYS: return 'Next 14 Days';
       case DATE_FILTER_OPTIONS.CUSTOM: return 'Custom Range';
@@ -479,6 +481,12 @@ class TodoListCard extends LitElement {
         const endOfTomorrow = new Date(tomorrow);
         endOfTomorrow.setHours(23, 59, 59, 999);
         return { start: tomorrow, end: endOfTomorrow };
+      }
+      case DATE_FILTER_OPTIONS.BEFORE_TODAY: {
+        // Include all tasks due today or earlier (through end of today)
+        const endOfToday = new Date(today);
+        endOfToday.setHours(23, 59, 59, 999);
+        return { start: null, end: endOfToday };
       }
       case DATE_FILTER_OPTIONS.NEXT_7_DAYS: {
         const endDate = new Date(today);
@@ -637,6 +645,10 @@ class TodoListCard extends LitElement {
                     <div class="filter-option ${this._dateFilter === DATE_FILTER_OPTIONS.TOMORROW ? 'selected' : ''}" @click="${() => this._setDateFilter(DATE_FILTER_OPTIONS.TOMORROW)}">
                         <ha-icon icon="${this._dateFilter === DATE_FILTER_OPTIONS.TOMORROW ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"></ha-icon>
                         <span>Tomorrow</span>
+                    </div>
+                    <div class="filter-option ${this._dateFilter === DATE_FILTER_OPTIONS.BEFORE_TODAY ? 'selected' : ''}" @click="${() => this._setDateFilter(DATE_FILTER_OPTIONS.BEFORE_TODAY)}">
+                        <ha-icon icon="${this._dateFilter === DATE_FILTER_OPTIONS.BEFORE_TODAY ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"></ha-icon>
+                        <span>Through Today</span>
                     </div>
                     <div class="filter-option ${this._dateFilter === DATE_FILTER_OPTIONS.NEXT_7_DAYS ? 'selected' : ''}" @click="${() => this._setDateFilter(DATE_FILTER_OPTIONS.NEXT_7_DAYS)}">
                         <ha-icon icon="${this._dateFilter === DATE_FILTER_OPTIONS.NEXT_7_DAYS ? 'mdi:radiobox-marked' : 'mdi:radiobox-blank'}"></ha-icon>
@@ -1075,6 +1087,7 @@ class TodoListCardEditor extends LitElement {
           <mwc-list-item value="all">All Dates</mwc-list-item>
           <mwc-list-item value="today">Today</mwc-list-item>
           <mwc-list-item value="tomorrow">Tomorrow</mwc-list-item>
+          <mwc-list-item value="before_today">Through Today</mwc-list-item>
           <mwc-list-item value="next_7_days">Next 7 Days</mwc-list-item>
           <mwc-list-item value="next_14_days">Next 14 Days</mwc-list-item>
           <mwc-list-item value="no_date">No Due Date</mwc-list-item>

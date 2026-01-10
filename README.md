@@ -82,6 +82,7 @@ Click the calendar icon to filter tasks by date:
 | All Dates | Show all tasks regardless of due date |
 | Today | Only tasks due today |
 | Tomorrow | Only tasks due tomorrow |
+| Through Today | Tasks due today or earlier (great for seeing overdue + today) |
 | Next 7 Days | Tasks due within the next week |
 | Next 14 Days | Tasks due within the next two weeks |
 | No Due Date | Tasks without a due date set |
